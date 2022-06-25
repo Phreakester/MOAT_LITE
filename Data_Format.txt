@@ -1,2 +1,0 @@
-Data logging format
-<Status, rpm, actuator_velocity, encoder_position, fully_shifted_in, fully_shifted_out, control_start_time, control_stop_time, odrive_voltage, odrive_curent>

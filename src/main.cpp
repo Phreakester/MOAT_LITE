@@ -17,26 +17,13 @@ General code to oversee all functions of the Teensy
 // Classes
 #include <Actuator.h>
 #include <Constant.h>
-#include <Cooling.h>
-#include <Radio.h>
 
 // Modes
 /*
  * Operating (0): For normal operation. Initializes then runs main control function in loop.
  * May disable logging object in its library config to free up memory.
  *
- * Headless Diagnostic (1): Runs diagnostic test 100 times, then stops, saves to SD card.
- * This is used for testing in sitations where the main power is on, and data will be retrieved from SD.
- * NOTE: DO NOT CONNECT TO TEENSY WHEN MAIN POWER IS ON OR IT COULD DAMAGE YOUR LAPTOP
- *
- * Serial Diagnostic (2): Runs diagnostic test continuously, prints to serial.
- *
- * Headless Horseman (3): For operation where data is not recorded.
- * This *may* increase performance, but at least helps to ensure SD card doesnt fill and mess thing up.
- * NOTE: Recommend disabling logging object in its include
- *
- * Wave (4): Operates the actuator in a wave pattern while logging data to the serial monitor
- * This will go from software stop to software stop continuously to hceck ay errors with the odrive or teensy
+ * Diagnostic (1)
  * 
  */
 #define MODE 0
@@ -84,7 +71,6 @@ unsigned int EXP_DECAY = 17;
 unsigned int REF_RPM = 18;
 
 //<--><--><--><-->< Subsystems ><--><--><--><--><-->
-Cooling cooler_o;
 
 // Actuator settings
 #define PRINT_TO_SERIAL false
@@ -171,12 +157,6 @@ void setup()
 
   save_log();
 
-  //------------------ODrive------------------//
-
-  //------------------Cooling------------------//
-
-  cooler_o.init();
-
   //-------------Actuator-----------------//
   // General Init
   Serial.println("Actuator Init");
@@ -221,7 +201,7 @@ void setup()
   Log.verbose("Initialization Complete" CR);
   Log.notice("Starting mode %d" CR, MODE);
   // This message is critical as it sets the order that the analysis script will read the data in
-  Log.notice("status, rpm, rpm_count, dt, act_vel, enc_pos, hall_in, hall_out, s_time, f_time, o_vol, o_curr, roll_frame, exp_decay, ref_rpm, therm1, therm2, therm3, estop" CR);
+  Log.notice("status, rpm, rpm_count, dt, act_vel, enc_pos, hall_in, hall_out, s_time, f_time, o_vol, o_curr, roll_frame, exp_decay, ref_rpm, estop" CR);
   save_log();
   Serial.println("Starting mode " + String(MODE));
 }
@@ -242,7 +222,7 @@ void loop()
   if (o_control[STATUS] != 3)
   {
     // For log output format check log statement after log begins in init
-    Log.notice("%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %F, %F, %F, %d" CR, 
+    Log.notice("%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d" CR, 
     o_control[STATUS], 
     o_control[RPM],
     o_control[RPM_COUNT],
@@ -258,9 +238,6 @@ void loop()
     o_control[ROLLING_FRAME],
     o_control[EXP_DECAY],
     o_control[REF_RPM],
-    cooler_o.get_thermistor(0), 
-    cooler_o.get_thermistor(1), 
-    cooler_o.get_thermistor(2), 
     digitalRead(constant.estop_pin)
     );
   }
@@ -274,30 +251,6 @@ void loop()
   save_count++;
 }
 
-// HEADLESS DIAGNOSTIC MODE
-#elif MODE == 1
-bool is_main_power = true;
-
-void loop()
-{
-  Log.notice("DIAGNOSTIC MODE" CR);
-  Log.verbose("Running diagnostic function" CR);
-
-  for (int i = 0; i < DIAGNOSTIC_MODE_SHOTS; i++)
-  {
-    // Serial.println(actuator.diagnostic(false));
-    Log.notice("%d", i);
-    // Assumes main power is connected
-    Log.notice((actuator.diagnostic(is_main_power, false)).c_str());
-    Log.notice("Thermocouple temp: %d", cooler_o.get_temperature());
-    delay(100);
-  }
-
-  Log.verbose("End of diagnostic function" CR);
-  log_file.close();
-  exit(0);
-}
-
 // SERIAL DIAGNOSTIC MODE
 #elif MODE == 2
 bool is_main_power = true;
@@ -306,38 +259,6 @@ void loop()
 {
   Log.notice((actuator.diagnostic(is_main_power, 10, true)).c_str());
   delay(500);
-}
-
-// HEADLESS HORSEMAN MODE
-#elif MODE == 3
-int temp = 0;
-
-void loop()
-{
-  // temp = cooler_o.thermo_check();
-  Serial.println(temp);
-  delay(100);
-
-  // digitalWrite(LED_BUILTIN, digitalRead(hall_inbound));
-  // Serial.println(digitalRead(hall_inbound));
-  // Serial.println("huh");
-  // delay(1000);
-}
-
-// Wave Mode
-#elif MODE == 4
-int shift_o;
-void loop() {
-  shift_o = actuator.fully_shift(true, 10000);
-  Serial.println("Shifted in, status: " + String(shift_o));
-  Serial.println("Estop pressed: " + String(estop_pressed));
-  estop_pressed = 0;
-  actuator.diagnostic(true, true);
-  shift_o = actuator.fully_shift(false, 10000);
-  Serial.println("Shifted out, status: " + String(shift_o));
-  Serial.println("Estop pressed: " + String(estop_pressed));
-  estop_pressed = 0;
-  actuator.diagnostic(true, true);
 }
 
 #endif
