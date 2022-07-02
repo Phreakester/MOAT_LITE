@@ -26,11 +26,12 @@ General code to oversee all functions of the Teensy
  * Diagnostic (1)
  * 
  */
-#define MODE 0
+#define MODE 1
 
 // Startup
-#define WAIT_SERIAL_STARTUP 0
-#define HOME_ON_STARTUP 1
+#define WAIT_SERIAL_STARTUP 1
+#define HOME_ON_STARTUP 0
+bool is_main_power = 0;
 // NOTE: To set model 20 / 21 check the Constant.h file
 
 // Constants Object
@@ -160,18 +161,18 @@ void setup()
   //-------------Actuator-----------------//
   // General Init
   Serial.println("Actuator Init");
-  int o_actuator_init = actuator.init(constant.homing_timeout);
-  if (o_actuator_init)
-  {
-    Log.error("Actuator Init Failed code: %d" CR, o_actuator_init);
-    Serial.println("Actuator init failed code: " + String(o_actuator_init));
-  }
-  else
-  {
-    Log.verbose("Actuator Init Success code: %d" CR, o_actuator_init);
-    Log.notice("Proportional gain (x1000): %d" CR, (1000.0 * actuator.get_p_value()));
-    Serial.println("Actuator init success code: " + String(o_actuator_init));
-  }
+  // int o_actuator_init = actuator.init(constant.homing_timeout);
+  // if (o_actuator_init)
+  // {
+  //   Log.error("Actuator Init Failed code: %d" CR, o_actuator_init);
+  //   Serial.println("Actuator init failed code: " + String(o_actuator_init));
+  // }
+  // else
+  // {
+  //   Log.verbose("Actuator Init Success code: %d" CR, o_actuator_init);
+  //   Log.notice("Proportional gain (x1000): %d" CR, (1000.0 * actuator.get_p_value()));
+  //   Serial.println("Actuator init success code: " + String(o_actuator_init));
+  // }
   save_log();
 
   // Geartooth Interrupts
@@ -252,8 +253,7 @@ void loop()
 }
 
 // SERIAL DIAGNOSTIC MODE
-#elif MODE == 2
-bool is_main_power = true;
+#elif MODE == 1
 
 void loop()
 {

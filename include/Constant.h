@@ -18,15 +18,15 @@ struct Constant
 
   std::map<String, int> pins = {
     {"estop", 36},
-    {"enc_a", 2},
-    {"enc_b", 3},
+    {"enc_a", 3},
+    {"enc_b", 4},
     {"hall_inbound", 22},
     {"hall_outbound", 23},
-    {"engine_geartooth", 41},
-    {"gearbox_geartooth", 40},
-    {"thermistor_1", 24},
-    {"thermistor_2", 38},
-    {"thermistor_3", 39}
+    {"engine_geartooth", 37},
+    {"gearbox_geartooth", 36},
+    {"thermistor_1", 40},
+    {"thermistor_2", 39},
+    {"thermistor_3", 38}
   };
 
   std::map<String, float> float_constants = {
