@@ -70,6 +70,8 @@ unsigned int ROLLING_FRAME = 16;
 unsigned int EXP_DECAY = 17;
 unsigned int REF_RPM = 18;
 
+int o_control[30];
+
 //<--><--><--><-->< Subsystems ><--><--><--><--><-->
 
 // Actuator settings
@@ -87,6 +89,13 @@ volatile unsigned long ext_eg_tooth_count = 0;
 volatile unsigned long ext_gb_tooth_count = 0;
 
 Actuator actuator(Serial1, constant, &ext_eg_tooth_count, &ext_gb_tooth_count, PRINT_TO_SERIAL);
+
+// Timer to run actuator control loop
+IntervalTimer timer;
+
+void control_function_interrupt_handler() {
+  actuator.control_function_interrupt();
+}
 
 // externally declared for interrupt
 void external_count_eg_tooth(){
@@ -204,12 +213,17 @@ void setup()
   Log.notice("status, rpm, rpm_count, dt, act_vel, enc_pos, hall_in, hall_out, s_time, f_time, o_vol, o_curr, roll_frame, exp_decay, ref_rpm, estop" CR);
   save_log();
   Serial.println("Starting mode " + String(MODE));
+  if (MODE == 7)
+  {
+    Serial.println("Attaching control function to interrupt, shits about to get weird");
+    timer.begin(control_function_interrupt_handler, constant.cycle_period * 1000);
+  }
 }
 
 // OPERATING MODE
 #if MODE == 0
 
-int o_control[30];
+
 int save_count = 0;
 int last_save = 0;
 int o_return = 0;
@@ -259,6 +273,12 @@ void loop()
 {
   Log.notice((actuator.diagnostic(is_main_power, 10, true)).c_str());
   delay(500);
+}
+
+#elif MODE == 7
+void loop()
+{
+  // Nothing :)
 }
 
 #endif

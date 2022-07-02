@@ -46,6 +46,7 @@ public:
 
   int init(int odrive_timeout);
   int* control_function(int* out);
+  void control_function_interrupt();
   int control_function_two(int* out);
   int* homing_sequence(int* out);
 

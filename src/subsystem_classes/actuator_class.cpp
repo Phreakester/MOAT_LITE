@@ -175,6 +175,41 @@ int* Actuator::control_function(int* out)
   return out;
 }
 
+void Actuator::control_function_interrupt()
+{
+  uint32_t timestamp = millis();
+  
+  uint32_t dt = timestamp - m_last_control_execution;
+  m_last_control_execution = timestamp;
+
+  m_control_function_count++;
+
+  float eg_rpm = calc_engine_rpm(dt);
+  float gb_rpm = calc_gearbox_rpm(dt);
+
+  float gb_rolling = calc_gearbox_rpm_rolling(gb_rpm);
+  float gb_exp_decay = calc_gearbox_rpm_exponential(gb_rpm);
+
+  float ref_rpm = calc_reference_rpm(m_gb_rolling);
+
+  float error = ref_rpm - eg_rpm;
+
+  // Stop shifting out if shifted out completely
+  bool outbound_signal = !digitalReadFast(constant.hall_outbound_pin);
+  bool inbound_signal = !digitalReadFast(constant.hall_inbound_pin);
+  if (outbound_signal && error > 0) error = 0;
+  if (inbound_signal && error < 0) error = 0;
+
+  // Calculate control signal
+  float motor_velocity = constant.proportional_gain * error;
+
+  odrive.set_velocity(constant.actuator_motor_number, motor_velocity);
+  odrive.run_state(constant.actuator_motor_number, 8, false, 0);
+
+  // No logging as done in an interrupt
+  Serial.println(String(timestamp) + "," + String(eg_rpm) + "," + String(gb_rolling) + "," + String(dt));
+}
+
 //----------------Geartooth Functions----------------//
 
 float Actuator::calc_gearbox_rpm(float dt)
